@@ -1,23 +1,29 @@
 package com.kedra.filedownloader.main.view.ui
 
-import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.kedra.filedownloader.R
+import androidx.core.view.isVisible
+import androidx.lifecycle.ViewModelProvider
 import com.kedra.filedownloader.databinding.MainFragmentBinding
 import com.kedra.filedownloader.main.view.adapter.MainAdapter
 import com.kedra.filedownloader.main.viewModel.MainViewModel
+import javax.inject.Inject
 
 class MainFragment : Fragment() {
 
     companion object {
         fun newInstance() = MainFragment()
     }
+//
+//    private val viewModel: MainViewModel by viewModels {
+//        viewModelFactory
+//    }
 
-    private lateinit var viewModel: MainViewModel
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
 
     private lateinit var binding: MainFragmentBinding
 
@@ -34,10 +40,23 @@ class MainFragment : Fragment() {
         initUi()
     }
 
-    private fun initUi(){
-        with(binding){
+    private fun initUi() {
+        with(binding) {
             rvList.adapter = MainAdapter()
+
         }
     }
 
+    fun showLayoutLoadingOrError(
+        isLoading: Boolean = true,
+        hasError: Boolean = false,
+        error: String
+    ) {
+
+        with(binding) {
+            progressbar.isVisible = isLoading
+            tvError.isVisible = hasError
+            tvError.text = error
+        }
+    }
 }
