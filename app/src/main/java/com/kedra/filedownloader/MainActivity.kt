@@ -2,7 +2,7 @@ package com.kedra.filedownloader
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.kedra.filedownloader.ui.main.MainFragment
+import com.kedra.filedownloader.main.view.ui.MainFragment
 
 class MainActivity : AppCompatActivity() {
 
