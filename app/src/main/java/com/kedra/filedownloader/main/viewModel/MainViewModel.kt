@@ -1,4 +1,4 @@
-package com.kedra.filedownloader.ui.main
+package com.kedra.filedownloader.main.viewModel
 
 import androidx.lifecycle.ViewModel
 
