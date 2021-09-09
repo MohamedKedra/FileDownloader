@@ -1,6 +1,40 @@
 package com.kedra.filedownloader.main.viewModel
 
-import androidx.lifecycle.ViewModel
+import com.kedra.filedownloader.main.network.models.ItemsResponse
+import com.kedra.filedownloader.main.network.models.ItemsResponseItem
+import com.kedra.filedownloader.main.network.source.ItemsRepository
+import com.kedra.filedownloader.utils.BaseViewModel
+import com.kedra.filedownloader.utils.LiveDataState
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.observers.DisposableSingleObserver
+import io.reactivex.schedulers.Schedulers
+import javax.inject.Inject
 
-class MainViewModel : ViewModel() {
+class MainViewModel @Inject constructor(private val repository: ItemsRepository) : BaseViewModel() {
+
+    private var liveDataState = LiveDataState<List<ItemsResponseItem>>()
+    private val disposable = CompositeDisposable()
+
+    fun refreshHomeList(): LiveDataState<List<ItemsResponseItem>> {
+
+        publishLoading(liveDataState)
+
+        disposable.add(
+            repository.getListItems().subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread()).subscribeWith(
+                    object : DisposableSingleObserver<List<ItemsResponseItem>>() {
+                        override fun onSuccess(response: List<ItemsResponseItem>) {
+                            publishResult(liveDataState, response)
+                        }
+
+                        override fun onError(error: Throwable) {
+                            publishError(liveDataState, error)
+                        }
+                    }
+                )
+        )
+        return liveDataState
+    }
+
 }
