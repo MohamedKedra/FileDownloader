@@ -1,6 +1,7 @@
 package com.kedra.filedownloader.main.viewModel
 
 import com.kedra.filedownloader.main.network.models.ItemsResponse
+import com.kedra.filedownloader.main.network.models.ItemsResponseItem
 import com.kedra.filedownloader.main.network.source.ItemsRepository
 import com.kedra.filedownloader.utils.BaseViewModel
 import com.kedra.filedownloader.utils.LiveDataState
@@ -12,18 +13,18 @@ import javax.inject.Inject
 
 class MainViewModel @Inject constructor(private val repository: ItemsRepository) : BaseViewModel() {
 
-    private var liveDataState = LiveDataState<ItemsResponse>()
+    private var liveDataState = LiveDataState<List<ItemsResponseItem>>()
     private val disposable = CompositeDisposable()
 
-    fun refreshHomeList(): LiveDataState<ItemsResponse> {
+    fun refreshHomeList(): LiveDataState<List<ItemsResponseItem>> {
 
         publishLoading(liveDataState)
 
         disposable.add(
             repository.getListItems().subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread()).subscribeWith(
-                    object : DisposableSingleObserver<ItemsResponse>() {
-                        override fun onSuccess(response: ItemsResponse) {
+                    object : DisposableSingleObserver<List<ItemsResponseItem>>() {
+                        override fun onSuccess(response: List<ItemsResponseItem>) {
                             publishResult(liveDataState, response)
                         }
 
