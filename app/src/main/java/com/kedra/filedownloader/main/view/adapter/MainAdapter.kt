@@ -3,12 +3,14 @@ package com.kedra.filedownloader.main.view.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.kedra.filedownloader.R
 import com.kedra.filedownloader.databinding.ItemListLayoutBinding
 import com.kedra.filedownloader.main.network.models.ItemsResponseItem
 
-class MainAdapter : RecyclerView.Adapter<MainAdapter.ItemHolder>() {
+class MainAdapter(private val onDownload: ((item: ItemsResponseItem, position: Int) -> Unit)) :
+    RecyclerView.Adapter<MainAdapter.ItemHolder>() {
 
     inner class ItemHolder(private val binding: ItemListLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -20,8 +22,23 @@ class MainAdapter : RecyclerView.Adapter<MainAdapter.ItemHolder>() {
                 tvOther.text = item.type
                 if (item.type == "VIDEO") {
                     ivFile.setImageResource(R.drawable.ic__video)
+                    item.pathType = "video/mp4"
                 } else {
                     ivFile.setImageResource(R.drawable.ic_pdf)
+                    item.pathType = "application/pdf"
+                }
+
+                if (item.isDownloaded) {
+                    progressLayout.isVisible = false
+                    ivDownload.setImageResource(R.drawable.ic_done)
+                } else {
+                    ivDownload.setImageResource(R.drawable.ic_download)
+                    ivDownload.setOnClickListener {
+                        progressLayout.isVisible = true
+                        onDownload.invoke(item, adapterPosition)
+                        progress.progress = item.percent
+                        tvPercent.text = item.percent.toString().plus("%")
+                    }
                 }
             }
         }
