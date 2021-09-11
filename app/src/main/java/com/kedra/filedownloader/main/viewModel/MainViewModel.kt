@@ -5,8 +5,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.Cursor
 import android.net.Uri
 import android.os.Environment
+import android.os.Handler
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.kedra.filedownloader.main.network.models.ItemsResponseItem
 import com.kedra.filedownloader.main.network.source.ItemsRepository
@@ -16,6 +19,11 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.observers.DisposableSingleObserver
 import io.reactivex.schedulers.Schedulers
+import okhttp3.ResponseBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.*
 import java.net.URL
 import javax.inject.Inject
 
@@ -24,6 +32,8 @@ class MainViewModel @Inject constructor(private val repository: ItemsRepository)
 
     private var liveDataState = LiveDataState<List<ItemsResponseItem>>()
     private val disposable = CompositeDisposable()
+
+    val percentData = MutableLiveData<Int>()
 
     fun refreshHomeList(): LiveDataState<List<ItemsResponseItem>> {
 
@@ -46,6 +56,64 @@ class MainViewModel @Inject constructor(private val repository: ItemsRepository)
         return liveDataState
     }
 
+    fun downloadFile(context: Context, url: String): MutableLiveData<Int> {
+
+        val call: Call<ResponseBody?>? = repository.getFileDownloaded(url)
+        call?.enqueue(object : Callback<ResponseBody?> {
+            override fun onResponse(call: Call<ResponseBody?>?, response: Response<ResponseBody?>) {
+                if (response.isSuccessful) {
+                    response.body()?.let {
+
+                        val writtenToDisk = writeResponseBodyToDisk(context, it)
+                        Log.d("data result", writtenToDisk.toString())
+                        percentData.postValue(writtenToDisk)
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody?>?, t: Throwable?) {
+                percentData.postValue(0)
+            }
+        })
+        return percentData
+    }
+
+    private fun writeResponseBodyToDisk(context: Context, body: ResponseBody): Int {
+        return try {
+            var percent = 0
+            val futureStudioIconFile =
+                File(context.filesDir, "FilesDownload")
+            var inputStream: InputStream? = null
+            var outputStream: OutputStream? = null
+            try {
+                val fileReader = ByteArray(4096)
+                val fileSize = body.contentLength()
+                var fileSizeDownloaded: Long = 0
+                inputStream = body.byteStream()
+                outputStream = FileOutputStream(futureStudioIconFile)
+                while (true) {
+                    val read: Int = inputStream.read(fileReader)
+                    if (read == -1) {
+                        break
+                    }
+                    outputStream.write(fileReader, 0, read)
+                    fileSizeDownloaded += read.toLong()
+                    Log.d("File Download: ", "$fileSizeDownloaded of $fileSize")
+                    percent = ((fileSizeDownloaded * 100L) / fileSize).toInt()
+                }
+                outputStream.flush()
+                percent
+            } catch (e: IOException) {
+                percent
+            } finally {
+                inputStream?.close()
+                outputStream?.close()
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            500
+        }
+    }
 
     fun downloadFile(
         context: Context,
@@ -78,5 +146,82 @@ class MainViewModel @Inject constructor(private val repository: ItemsRepository)
         }
         context.registerReceiver(br, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
         return data
+    }
+
+    private fun updateDisplay(
+        downloadManager: DownloadManager,
+        downloadId: Long,
+        onUpdateUi: ((item: ItemsResponseItem, position: Int) -> Unit)
+    ) {
+        var isDownloading = true
+        var downloadStatus: Int
+        var totalBytesDownloaded: Int
+        var totalBytes: Int
+        while (isDownloading) {
+            val downloadQuery = DownloadManager.Query()
+            downloadQuery.setFilterById(downloadId)
+            val cursor: Cursor = downloadManager.query(downloadQuery)
+            cursor.moveToFirst()
+            totalBytesDownloaded = cursor.getInt(
+                cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+            )
+            totalBytes = cursor.getInt(
+                cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+            )
+
+            val downloadProgress =
+                (totalBytesDownloaded.toDouble() / totalBytes.toDouble() * 100f).toInt()
+
+            downloadStatus = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+            if (downloadStatus == DownloadManager.STATUS_SUCCESSFUL) {
+                isDownloading = false
+                break
+            } else if (downloadStatus == DownloadManager.STATUS_FAILED) {
+                isDownloading = true
+                break
+            }
+        }
+    }
+
+    private fun startDownload(downloadManager: DownloadManager, downloadId: Long) {
+
+        val updateHandler = Handler()
+
+        val runnable = Runnable {
+            var isDownloading = true
+            var downloadStatus: Int
+            var totalBytesDownloaded: Int
+            var totalBytes: Int
+            while (isDownloading) {
+                val downloadQuery = DownloadManager.Query()
+                downloadQuery.setFilterById(downloadId)
+                val cursor: Cursor = downloadManager.query(downloadQuery)
+                cursor.moveToFirst()
+                totalBytesDownloaded = cursor.getInt(
+                    cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                )
+                totalBytes = cursor.getInt(
+                    cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                )
+
+                val downloadProgress =
+                    (totalBytesDownloaded.toDouble() / totalBytes.toDouble() * 100f).toInt()
+                run {
+
+                }
+
+                downloadStatus = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                if (downloadStatus == DownloadManager.STATUS_SUCCESSFUL) {
+                    isDownloading = false
+                    break
+                } else if (downloadStatus == DownloadManager.STATUS_FAILED) {
+                    isDownloading = true
+                    break
+                }
+            }
+        }
+
+        updateHandler.postDelayed(runnable, 500)
+
     }
 }

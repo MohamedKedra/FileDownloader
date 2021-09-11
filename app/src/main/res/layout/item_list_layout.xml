@@ -66,6 +66,7 @@
         <LinearLayout
             android:layout_marginBottom="@dimen/margin_8"
             android:id="@+id/progress_layout"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
@@ -77,14 +78,12 @@
                 app:trackColor="#FFFFA68D"
                 app:indicatorColor="#FFFD3A84"
                 android:layout_gravity="center"
-                android:progress="40"
                 android:layout_weight="1"/>
 
             <TextView
                 android:id="@+id/tv_percent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="40%"
                 android:textColor="#FFFD3A84"
                 android:layout_marginHorizontal="@dimen/margin_8"
                 android:layout_gravity="center"/>

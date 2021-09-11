@@ -51,11 +51,30 @@ class MainFragment : Fragment(), Injectable {
     private fun initUi() {
         with(binding) {
             adapter = MainAdapter { item, position ->
-                Toast.makeText(
-                    requireContext(),
-                    "downloading ... ${item.name}",
-                    Toast.LENGTH_LONG
-                ).show()
+//                if (!item.isDownloaded) {
+//
+//                    Toast.makeText(
+//                        requireContext(),
+//                        "downloading ... ${item.name}",
+//                        Toast.LENGTH_LONG
+//                    ).show()
+//                    viewModel.downloadFile(requireContext(), item.url)
+//                        .observe(viewLifecycleOwner, { percent ->
+//
+//                            item.percent = percent
+//                            if (percent == 100) {
+//                                item.isDownloaded = true
+//                            }
+//                            adapter.notifyItemChanged(position)
+//                        })
+//                } else {
+//
+//                    Toast.makeText(
+//                        requireContext(),
+//                        "${item.name} is downloaded before",
+//                        Toast.LENGTH_LONG
+//                    ).show()
+//                }
                 viewModel.downloadFile(requireContext(), item.pathType, URL(item.url), item.name)
                     .observe(viewLifecycleOwner, {
                         if (it) {

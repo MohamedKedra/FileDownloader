@@ -6,5 +6,6 @@ data class ItemsResponseItem(
     val type: String,
     val url: String,
     var pathType: String = "",
-    var isDownloaded: Boolean = false
+    var isDownloaded: Boolean = false,
+    var percent :Int = 0
 )
