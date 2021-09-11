@@ -8,9 +8,10 @@ import com.kedra.filedownloader.R
 import com.kedra.filedownloader.databinding.ItemListLayoutBinding
 import com.kedra.filedownloader.main.network.models.ItemsResponseItem
 
-class MainAdapter : RecyclerView.Adapter<MainAdapter.ItemHolder>() {
+class MainAdapter(private val onDownload: ((item: ItemsResponseItem, position: Int) -> Unit)) :
+    RecyclerView.Adapter<MainAdapter.ItemHolder>() {
 
-    inner class ItemHolder(private val binding: ItemListLayoutBinding) :
+    inner class ItemHolder(val binding: ItemListLayoutBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: ItemsResponseItem) {
@@ -20,9 +21,22 @@ class MainAdapter : RecyclerView.Adapter<MainAdapter.ItemHolder>() {
                 tvOther.text = item.type
                 if (item.type == "VIDEO") {
                     ivFile.setImageResource(R.drawable.ic__video)
+                    item.pathType = "video/mp4"
                 } else {
                     ivFile.setImageResource(R.drawable.ic_pdf)
+                    item.pathType = "application/pdf"
                 }
+
+                if (item.isDownloaded) {
+                    ivDownload.setImageResource(R.drawable.ic_done)
+                } else {
+                    ivDownload.setImageResource(R.drawable.ic_download)
+                    ivDownload.setOnClickListener {
+                        onDownload.invoke(item, adapterPosition)
+                    }
+                }
+
+
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
@@ -12,9 +13,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import com.kedra.filedownloader.databinding.MainFragmentBinding
 import com.kedra.filedownloader.main.di.Injectable
+import com.kedra.filedownloader.main.download.OnProgressUpdateListener
 import com.kedra.filedownloader.main.view.adapter.MainAdapter
 import com.kedra.filedownloader.main.viewModel.MainViewModel
 import com.kedra.filedownloader.utils.DataState
+import java.net.URL
 import javax.inject.Inject
 
 class MainFragment : Fragment(), Injectable {
@@ -42,6 +45,36 @@ class MainFragment : Fragment(), Injectable {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initUi()
+    }
+
+    private fun initUi() {
+        with(binding) {
+            adapter = MainAdapter { item, position ->
+                Toast.makeText(
+                    requireContext(),
+                    "downloading ... ${item.name}",
+                    Toast.LENGTH_LONG
+                ).show()
+                viewModel.downloadFile(requireContext(), item.pathType, URL(item.url), item.name)
+                    .observe(viewLifecycleOwner, {
+                        if (it) {
+                            item.isDownloaded = true
+                            adapter.notifyItemChanged(position)
+                            Toast.makeText(
+                                requireContext(),
+                                "Downloaded ${item.name}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    })
+            }
+            rvList.adapter = adapter
+        }
+        initObserveData()
+    }
+
+    private fun initObserveData() {
         viewModel.refreshHomeList().observe(viewLifecycleOwner, {
             when (it.getStatus()) {
 
@@ -61,7 +94,7 @@ class MainFragment : Fragment(), Injectable {
                                 error = "Empty List"
                             )
                         }
-                    }?: kotlin.run {
+                    } ?: kotlin.run {
                         showLayoutLoadingOrError(
                             isLoading = false,
                             hasError = true,
@@ -85,15 +118,6 @@ class MainFragment : Fragment(), Injectable {
 
             }
         })
-        initUi()
-    }
-
-    private fun initUi() {
-        with(binding) {
-            adapter = MainAdapter()
-            rvList.adapter = adapter
-
-        }
     }
 
     private fun showLayoutLoadingOrError(

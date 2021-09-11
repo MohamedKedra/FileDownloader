@@ -4,5 +4,7 @@ data class ItemsResponseItem(
     val id: Int,
     val name: String,
     val type: String,
-    val url: String
+    val url: String,
+    var pathType: String = "",
+    var isDownloaded: Boolean = false
 )
